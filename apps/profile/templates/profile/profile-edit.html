@@ -1,0 +1,14 @@
+{% extends 'layout/layout_vertical.html' %}
+
+{% load static i18n humanize %}
+
+{% block title %}Projects - {{ user }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/profile.css' %}" />
+{% endblock page_css %}
+
+{% block content %}
+  
+{% endblock %}

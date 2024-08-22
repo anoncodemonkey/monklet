@@ -1,0 +1,34 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html
+  lang="en"
+  class="{{style}}-style layout-navbar-hidden customizer-hide layout-compact"
+  dir="ltr"
+  data-theme="{{theme}}"
+  data-assets-path="{% static '/' %}"
+  data-base-url="{{url}}"
+  data-framework="django"
+  data-template="vertical-menu-is_front-{{ theme }}-{{style}}">
+  <head>
+    <title>{% block title %}{% endblock title %} | monklet</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <meta name="description" content="AI-driven qualitative data analysis platform" />
+    <meta name="keywords" content="qualitative analysis, chatbot, AI" />
+    <link rel="shortcut icon" type="image/svg+xml" href="{% static 'img/favicon/bird-circle.svg' %}" />
+    {% include "./partials/styles_front.html" %}
+    {% block vendor_css %}{% endblock vendor_css %}
+    {% block page_css %}{% endblock page_css %}
+    {% include "./partials/scripts_includes_front.html" %}
+  </head>
+
+  <body>
+    {% block layout %}
+    {% endblock layout %}
+    {% include "./partials/scripts_front.html" %}
+    {% block vendor_js %} {% endblock vendor_js %}
+    {% block page_js %} {% endblock page_js %}
+  </body>
+
+</html>
