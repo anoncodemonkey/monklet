@@ -54,8 +54,10 @@ INSTALLED_APPS = [
     "apps.pages",
     "apps.projects",
     "apps.profile",
+    "apps.invitations",
     "crispy_forms",
     "crispy_bootstrap5",
+    "django_extensions",
 ]
 
 MIDDLEWARE = [
@@ -84,10 +86,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "config.context_processors.language_code",
-                "config.context_processors.my_setting",
-                "config.context_processors.get_cookie",
-                "config.context_processors.environment",
+                # "config.context_processors.language_code",
+                # "config.context_processors.get_cookie",
+                # "config.context_processors.environment",
             ],
             "libraries": {
                 "theme": "web_project.template_tags.theme",
@@ -203,7 +204,7 @@ ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "optional"
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
 
 # https://docs.allauth.org/en/latest/installation/quickstart.html
@@ -225,6 +226,7 @@ if DEBUG:
     EMAIL_HOST = "localhost"
     # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
     EMAIL_PORT = 1025
+    EMAIL_SENDER = 'support@monklet.com'
 else:
     # Use mailgun in prod via Anymail
     # https://anymail.readthedocs.io/en/stable/installation/#installing-anymail
@@ -240,3 +242,6 @@ else:
             "MAILGUN_API_URL", default="https://api.mailgun.net/v3"
         ),
     }
+    EMAIL_SENDER = 'support@monklet.com'
+
+INVITATION_EXPIRY_DAYS = 7

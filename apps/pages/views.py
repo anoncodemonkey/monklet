@@ -2,9 +2,9 @@ from django.views.generic import TemplateView
 from web_project import TemplateLayout
 from web_project.template_helpers.theme import TemplateHelper
 
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
-from django.urls import reverse
+from django.urls import reverse_lazy
 
 from .forms import EnquiryForm
 
@@ -27,26 +27,27 @@ class LandingPageView(PagesView):
         context = super().get_context_data(**kwargs)
 
         if self.request.user.is_authenticated:
-            context["redirect_url"] = "/console/"
+            return redirect(reverse_lazy('profile'))
         return context
 
 
 def comingsoon(request):
+    if request.user.is_authenticated:
+        return redirect(reverse_lazy('profile'))
     if request.method == "POST":
         form = EnquiryForm(request.POST)
         if form.is_valid():
             form.save()
-            return HttpResponseRedirect(reverse("enquiry_success"))
+            return HttpResponseRedirect(reverse_lazy("enquiry_success"))
     else:
         form = EnquiryForm()
 
-    return render(
-        request,
-        "comingsoon.html",
-        {"form": form, "layout_path": TemplateHelper.set_layout("layout_blank.html")},
-    )
+    ctx = {"form": form}
+    ctx['layout_path'] = TemplateHelper.set_layout("layout_blank.html")
+    return render(request, "comingsoon.html", ctx)
 
 
 def enquiry_success(request):
-    return render(request, "enquiry_success.html",
-                  {"layout_path": TemplateHelper.set_layout("layout_blank.html")})
+    ctx = {}
+    ctx['layout_path'] = TemplateHelper.set_layout("layout_blank.html")
+    return render(request, "enquiry_success.html", ctx)
