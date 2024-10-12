@@ -172,3 +172,5 @@ cython_debug/
 #.idea/
 mailpit
 db.sqlite3
+.env
+staticfiles.tar.gz

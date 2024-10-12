@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 from django.utils.translation import gettext_lazy as _
@@ -20,12 +21,15 @@ from .template import TEMPLATE_CONFIG, THEME_LAYOUT_DIR
 
 load_dotenv()  # take environment variables from .env.
 
+TESTING = hasattr(sys, "argv") and "test" in sys.argv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
+MANAGE = any(["manage.py" in s for s in sys.argv])
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY", default="")
@@ -34,9 +38,23 @@ SECRET_KEY = os.environ.get("SECRET_KEY", default="")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "True").lower() in ["true", "yes", "1"]
 
-
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "192.168.168.110"]
+if DEBUG:
+    ALLOWED_HOSTS = [
+        "localhost",
+        "0.0.0.0",
+        "127.0.0.1",
+        "192.168.168.110",
+        "monklet.com",
+    ]
+else:
+    ALLOWED_HOSTS = [
+        "localhost",
+        "127.0.0.1",
+        "monklet.com",
+        "www.monklet.com",
+        "51.20.117.226",
+    ]
 
 # Current DJANGO_ENVIRONMENT
 ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", default="local")
@@ -53,12 +71,17 @@ INSTALLED_APPS = [
     "allauth.account",
     "apps.pages",
     "apps.projects",
-    "apps.profile",
-    "apps.invitations",
+    "apps.users",
     "crispy_forms",
     "crispy_bootstrap5",
-    "django_extensions",
+    "django_recaptcha",
+    "channels",
 ]
+
+if DEBUG:
+    INSTALLED_APPS += [
+        "django_extensions",
+    ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -86,38 +109,54 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                # "config.context_processors.language_code",
-                # "config.context_processors.get_cookie",
-                # "config.context_processors.environment",
+                "config.context_processors.cache_buster",
             ],
-            "libraries": {
-                "theme": "web_project.template_tags.theme",
-            },
+            # "libraries": {
+            #     "theme": "web_project.template_tags.theme",
+            # },
             "builtins": [
                 "django.templatetags.static",
-                "web_project.template_tags.theme",
+                # "web_project.template_tags.theme",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
+# WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 # https://github.com/django-crispy-forms/crispy-bootstrap5
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 CRISPY_FAIL_SILENTLY = not DEBUG
 
+RECAPTCHA_PUBLIC_KEY = os.environ.get("RECAPTCHA_PUBLIC_KEY")
+RECAPTCHA_PRIVATE_KEY = os.environ.get("RECAPTCHA_PRIVATE_KEY")
+
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
-
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME"),
+            # "USER": os.environ.get("DB_USER"),
+            # "PASSWORD": os.environ.get("DB_PASSWORD"),
+            # "HOST": os.environ.get("DB_HOST"),
+            # "PORT": os.environ.get("DB_PORT"),
+            "OPTIONS": {
+                "server_side_binding": True,
+            },
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -137,6 +176,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ACCOUNT_FORMS = {
+    "login": "apps.users.forms.LoginForm",
+    "signup": "apps.users.forms.SignupForm",
+    "reset_password": "apps.users.forms.ResetPasswordForm",
+    "reset_password_from_key": "apps.users.forms.ResetPasswordKeyForm",
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
@@ -166,7 +211,7 @@ LOCALE_PATHS = [
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = "/static/"
+STATIC_URL = os.environ.get("STATIC_URL", default="/static/")
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
@@ -196,9 +241,10 @@ TEMPLATE_CONFIG = TEMPLATE_CONFIG
 # SESSION_COOKIE_SAMESITE = "Lax"
 # SESSION_COOKIE_AGE = 3600
 
+AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "/accounts/login/"
 LOGOUT_REDIRECT_URL = "/"
-LOGIN_REDIRECT_URL = '/profile/'
+LOGIN_REDIRECT_URL = "/users/profile"
 
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_EMAIL_REQUIRED = True
@@ -206,6 +252,7 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 ACCOUNT_PASSWORD_MIN_LENGTH = 8
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
 # https://docs.allauth.org/en/latest/installation/quickstart.html
 AUTHENTICATION_BACKENDS = [
@@ -215,6 +262,8 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = ["https://monklet.com", "https://www.monklet.com"]
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-timeout
 EMAIL_TIMEOUT = 5
@@ -226,7 +275,7 @@ if DEBUG:
     EMAIL_HOST = "localhost"
     # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
     EMAIL_PORT = 1025
-    EMAIL_SENDER = 'support@monklet.com'
+    EMAIL_SENDER = "support@monklet.com"
 else:
     # Use mailgun in prod via Anymail
     # https://anymail.readthedocs.io/en/stable/installation/#installing-anymail
@@ -239,9 +288,81 @@ else:
         "MAILGUN_API_KEY": os.environ.get("MAILGUN_API_KEY"),
         "MAILGUN_SENDER_DOMAIN": os.environ.get("MAILGUN_DOMAIN"),
         "MAILGUN_API_URL": os.environ.get(
-            "MAILGUN_API_URL", default="https://api.mailgun.net/v3"
+            "MAILGUN_API_URL", default="https://api.eu.mailgun.net/v3"
         ),
     }
-    EMAIL_SENDER = 'support@monklet.com'
+    EMAIL_SENDER = "support@monklet.com"
 
 INVITATION_EXPIRY_DAYS = 7
+
+if DEBUG:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [("127.0.0.1", 6379)],
+            },
+        },
+    }
+
+
+if not DEBUG and not MANAGE and not TESTING:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "formatters": {
+            "verbose": {
+                "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
+            },
+        },
+        "handlers": {
+            "file": {
+                "level": "WARNING",
+                "class": "logging.FileHandler",
+                "filename": "/var/log/monklet/monklet.log",
+            },
+        },
+        "root": {"level": "WARNING", "handlers": ["file"]},
+        "loggers": {
+            "django": {
+                "handlers": ["file"],
+                "level": "WARNING",
+                "propagate": True,
+            },
+            "django.db.backends": {
+                "level": "ERROR",
+                "handlers": ["file"],
+                "propagate": False,
+            },
+            "django.security.DisallowedHost": {
+                "level": "WARNING",
+                "handlers": ["file"],
+                "propagate": False,
+            },
+        },
+    }
+elif not TESTING:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+            },
+        },
+        "root": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+        "loggers": {
+            "django": {
+                "handlers": ["console"],
+                "level": "INFO",
+                "propagate": True,
+            },
+        },
+    }
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")

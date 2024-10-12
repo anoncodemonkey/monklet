@@ -1,42 +1,26 @@
-"""
-URL configuration for web_project project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
 from django.contrib import admin
 from django.urls import include, path
-from web_project.views import SystemView
+from apps.pages.views import make_error_handler
 from django.conf import settings
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("apps.pages.urls")),
-    path("profile/", include("apps.profile.urls")),
-    path("projects/", include("apps.projects.urls")),
-    path("invitations/", include("apps.invitations.urls")),
+    path("users/", include("apps.users.urls")),
+    path("", include("apps.projects.urls")),
     path("accounts/", include("allauth.urls")),
 ]
 
-handler404 = SystemView.as_view(template_name="pages_misc_error.html", status=404)
-handler403 = SystemView.as_view(template_name="pages_misc_not_authorized.html", status=403)
-handler400 = SystemView.as_view(template_name="pages_misc_error.html", status=400)
-handler500 = SystemView.as_view(template_name="pages_misc_error.html", status=500)
+handler404 = make_error_handler(status=404)
+handler401 = make_error_handler(status=401)
+handler403 = make_error_handler(status=403)
+handler400 = make_error_handler(status=400)
+handler500 = make_error_handler(status=500)
 
-if settings.DEBUG:
+if settings.DEBUG or settings.TEST_RUNNER:
     urlpatterns += [
         path("404", handler404),
+        path("401", handler401),
         path("403", handler403),
         path("400", handler400),
         path("500", handler500),

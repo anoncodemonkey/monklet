@@ -1,0 +1,108 @@
+{% extends 'layout/layout_vertical.html' %}
+
+{% load static i18n humanize %}
+
+{% block title %}Simulator: {{bot.name}} - {{ project.name }}{% endblock %}
+
+{% block vendor_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/libs/bootstrap-maxlength/bootstrap-maxlength.css' %}" />
+{% endblock vendor_css %}
+
+{% block vendor_js %}
+{{ block.super }}
+<script src="{% static 'vendor/libs/bootstrap-maxlength/bootstrap-maxlength.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/simulator.css' %}" />
+<link rel="stylesheet" href="{% static 'vendor/css/project.css' %}" />
+{% endblock page_css %}
+
+{% block page_js %}
+{{ block.super }}
+<script src="{% static 'vendor/js/interview.js' %}?v={{ CACHE_BUSTER }}"></script>
+<script src="{% static 'vendor/js/simulator.js' %}?v={{ CACHE_BUSTER }}"></script>
+<script>
+  const elem = document.getElementById('simulator')
+  const api_base = "{% url 'project' pk=project.pk %}"
+  const static_url = "{% static '' %}"
+  const simulator = new Simulator(elem, api_base, static_url);
+</script>
+{% endblock page_js %}
+
+{% block content %}
+<div class="alert alert-info d-none" role="alert">
+  The bot simulator will be ready soon. For now, use the public page link
+  accessible from the bot list.
+</div>
+<div id='simulator' class="simulator card overflow-hidden">
+  <div class="row g-0">
+    <!-- Test interview list -->
+    <div class="col simulator-left-pane simulator-bots app-sidebar flex-grow-0 overflow-hidden border-end">
+      <div class="sidebar-header h-px-75 px-5 border-bottom d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center me-4 me-lg-0">
+          <div class="flex-grow-1">
+            <h6>Bot simulator</h6>
+          </div>
+        </div>
+        <div class="">
+        </div>
+        <!-- div><a href="#" class="btn btn-primary">New chat</a></! -->
+        <!-- i class="ri-close-line ri-20px cursor-pointer position-absolute top-50 end-0 translate-middle fs-4 d-lg-none d-block" data-overlay data-bs-toggle="sidebar" data-target="#simulator-bots"></! -->
+      </div>
+      <div class="sidebar-body">
+        <ul class="interview-list list-unstyled chat-bot-list py-2 mb-0">
+          <li class="chat-bot-list-item chat-bot-list-item-title mt-0">
+            <h5 class="text-primary mb-0">Test interviews</h5>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="col simulator-history">
+      <div class="chat-history-wrapper">
+        <div class="chat-history-header border-bottom">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex overflow-hidden align-items-center">
+              <i class="ri-menu-line ri-24px cursor-pointer d-lg-none d-block me-4" data-bs-toggle="sidebar" data-overlay data-target="#simulator-bots"></i>
+              <div class="flex-shrink-0 avatar avatar-online">
+                <img src="{% static 'img/avatars/bot.svg' %}" alt="Avatar" class="rounded-circle" data-bs-toggle="sidebar" data-overlay data-target="#simulator-sidebar-right">
+              </div>
+              <div class="chat-bot-info flex-grow-1 ms-4">
+                <h6 class="m-0 fw-normal bot-name">&nbsp;</h6>
+                <small class="user-status text-body bot-version">&nbsp;</small>
+              </div>
+            </div>
+            <div class="d-flex align-items-center">
+              <!-- div class="dropdown">
+                <button class="btn  btn-sm btn-icon btn-text-secondary text-body rounded-pill dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-expanded="true" id="chat-header-actions"><i class="ri-more-2-line ri-20px"></i></button>
+                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="chat-header-actions">
+                  <a class="dropdown-item" href="javascript:void(0);">New chat</a>
+                  <a class="dropdown-item" href="javascript:void(0);">Delete chat</a>
+                </div>
+              </div -->
+            </div>
+          </div>
+        </div>
+        <div class="chat-history-body">
+          <ul class="list-unstyled chat-history">
+          </ul>
+        </div>
+        <div class="chat-history-footer">
+          <form class="form-send-message d-flex justify-content-between align-items-center ">
+            <input class="form-control message-input me-4 shadow-none" placeholder="Type your message here...">
+            <div class="message-actions d-flex align-items-center">
+              <button class="btn btn-primary d-flex send-msg-btn">
+                <span class="align-middle">Send</span>
+                <i class="ri-send-plane-line ri-16px ms-md-1_5 ms-0"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}

@@ -234,6 +234,9 @@ $chat-bg-dark: #373452;
 
             .chat-message-text {
               border-top-right-radius: 0;
+              p {
+                color: light.$white;
+              }
             }
 
             .user-avatar {
@@ -256,7 +259,7 @@ $chat-bg-dark: #373452;
     .chat-history-footer {
       padding: calc($chat-history-footer-padding-y - 0.3125rem) $chat-history-footer-padding-y
         calc($chat-history-footer-padding-y - 0.3125rem) $chat-history-header-padding-y;
-      margin: $chat-history-footer-margin-x;
+      margin: $chat-history-footer-margin-x $chat-history-footer-margin-x 0.1rem $chat-history-footer-margin-x;
       border-radius: $chat-message-text-border-radius;
 
       // To make input border transparent on focus
@@ -377,7 +380,7 @@ $chat-bg-dark: #373452;
                 justify-content: flex-end;
 
                 .chat-message-text {
-                  color: light.$white;
+                  color: white; //light.$white;
                 }
               }
             }
