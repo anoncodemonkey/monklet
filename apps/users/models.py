@@ -1,3 +1,4 @@
+import uuid
 from typing import ClassVar
 
 from django.contrib.auth.models import AbstractUser
@@ -24,6 +25,7 @@ class User(AbstractUser):
     last_name = None  # type: ignore[assignment]
     email = models.EmailField(_("email address"), unique=True)
     username = None  # type: ignore[assignment]
+    token = models.UUIDField("API token", default=uuid.uuid4, null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -73,14 +75,16 @@ class Profile(models.Model):
             for m in proj.members.all():
                 members.append({"name": m.name, "avatar_url": m.avatar_url})
             return {
-                "url": proj.url,
+                "pk": proj.pk,
+                "url": proj.get_absolute_url(),
                 "name": proj.name,
                 "owner_name": proj.owner.name or str(proj.owner),
                 "last_modified_at": proj.last_modified_at,
                 "members": members,
+                "owner_pk": proj.owner.pk,
             }
 
-        for p in self.user.owned_projects.all():
+        for p in self.user.owned_projects.filter(deleted_at=None):
             projects.append(details(p))
         for pm in self.user.project_memberships.select_related("project").all():
             projects.append(details(pm.project))

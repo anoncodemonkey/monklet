@@ -1,0 +1,25 @@
+{% load crispy_forms_tags %}
+
+<h6>Manually create case record</h6>
+<form>
+  {{ form | crispy }}
+  {% csrf_token %}
+  <div class="mb-3">
+    <input
+      type="submit"
+      name="Create"
+      value="save"
+      class="btn btn-primary"
+      id="submit-id-save"
+      hx-post="{% url "case-new" pk=project.pk %}"
+      hx-swap="innerHTML"
+      hx-target="#cases-tab">
+    <a
+      class="btn"
+      hx-get="{% url "cases" pk=project.pk %}"
+      hx-swap="innerHTML"
+      hx-target="#cases-tab">
+      Cancel
+    </a>
+  </div>
+</form>

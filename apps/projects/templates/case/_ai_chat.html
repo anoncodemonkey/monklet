@@ -1,0 +1,24 @@
+<table class="table">
+  <thead class="table-light">
+    <tr class="text-nowrap">
+        <th>Sender</th>
+        <th>Text</th>
+        <th>Time</th>
+        <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for msg in record.content %}
+    {% include 'case/_ai_chat_row.html' %}
+    {% empty %}
+    <tr colspan="4">
+      Empty conversation
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div class="mt-5">
+  <a href="{% url 'interview-conversation' pk=record.interview_id %}">
+    Original AI chat transcript
+  </a>
+</div>

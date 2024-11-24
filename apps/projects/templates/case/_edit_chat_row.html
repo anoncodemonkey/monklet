@@ -1,0 +1,31 @@
+{% load markdown_filters crispy_forms_tags %}
+
+<tr id="row-{{msg.id}}">
+  <td>{{ msg.who }}</td>
+  <td>
+    <form>
+      {{ form.text }}
+      {% csrf_token %}
+      <div class='d-flex align-content-end'>
+        <input
+          class="btn btn-primary"
+          type='submit'
+          name="save"
+          value="Save"
+          hx-post="{% url 'record-edit-line' pk=pk line=msg.id %}"
+          hx-target="#row-{{msg.id}}"
+          hx-swap="outerHTML">
+        <a
+          class="btn"
+          href="#"
+          hx-get="{% url 'record-line' pk=pk line=msg.id %}"
+          hx-target="#row-{{msg.id}}"
+          hx-swap="outerHTML">
+          Cancel
+        </a>
+    </form>
+  </td>
+  <td>{{ msg.reference }}</td>
+  <td>
+  </td>
+</tr>

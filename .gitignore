@@ -174,3 +174,8 @@ mailpit
 db.sqlite3
 .env
 staticfiles.tar.gz
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+testdata.json

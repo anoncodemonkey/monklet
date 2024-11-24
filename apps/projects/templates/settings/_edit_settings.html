@@ -1,0 +1,24 @@
+{% load crispy_forms_tags %}
+
+<form>
+  {{ form | crispy }}
+  {% csrf_token %}
+  <div class="mb-3">
+    <input
+      type="submit"
+      name="Save"
+      value="save"
+      class="btn btn-primary"
+      id="submit-id-save"
+      hx-post="{% url "project-settings-tab" pk=project.pk %}"
+      hx-swap="innerHTML"
+      hx-target="#settings-tab">
+    <a
+      class="btn"
+      hx-get="{% url "project-settings-tab" pk=project.pk %}?readonly=true"
+      hx-swap="innerHTML"
+      hx-target="#settings-tab">
+      Cancel
+    </a>
+  </div>
+</form>

@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Optional
+from typing import Dict, Optional, Iterable
 import datetime
 
 from django.db import models
@@ -35,6 +35,7 @@ class Project(models.Model):
     description = models.TextField(null=True, blank=True)
     research_aims = models.TextField(null=True, blank=True)
     funding = models.TextField(null=True, blank=True)
+    themes = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=False, editable=False)
     last_modified_at = models.DateTimeField(auto_now=True, null=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -81,7 +82,7 @@ class Project(models.Model):
     def invited_interviews(self):
         return self.interviews.filter(deleted_at=None, status="invited", is_test=False)
 
-    def started_completed_interviews(self):
+    def started_completed_interviews(self) -> Iterable["Interview"]:
         return self.interviews.filter(deleted_at=None, is_test=False).exclude(
             status="invited"
         )
@@ -104,53 +105,30 @@ class Project(models.Model):
             .order_by("week_start")
         )
 
-    @property
-    def url(self):
+    def get_absolute_url(self):
         return reverse_lazy("project", kwargs={"pk": self.id})
 
-    @property
-    def settings_url(self):
-        return reverse_lazy("project-settings", kwargs={"pk": self.id})
+    def get_active_bots(self):
+        return self.bots.filter(deleted_at=None)
 
-    @property
-    def delete_url(self):
-        return reverse_lazy("project-delete", kwargs={"pk": self.id})
+    def current_cases(self) -> Iterable["Case"]:
+        return self.cases.filter(deleted_at=None)
 
-    @property
-    def leave_url(self):
-        return reverse_lazy("project-leave", kwargs={"pk": self.id})
+    def current_case_attributes(self):
+        return self.case_attributes.filter(deleted_at=None)
 
-    @property
-    def members_url(self):
-        return reverse_lazy("project-members", kwargs={"pk": self.id})
-
-    @property
-    def analysis_url(self):
-        return reverse_lazy("project-analysis", kwargs={"pk": self.id})
-
-    @property
-    def questions_url(self):
-        return reverse_lazy("project-questions", kwargs={"pk": self.id})
-
-    @property
-    def bots_url(self):
-        return reverse_lazy("project-bots", kwargs={"pk": self.id})
-
-    @property
-    def invitations_url(self):
-        return reverse_lazy("project-invitations", kwargs={"pk": self.id})
-
-    @property
-    def data_url(self):
-        return reverse_lazy("project-responses", kwargs={"pk": self.id})
-
-    @property
-    def files_url(self):
-        return reverse_lazy("project-files", kwargs={"pk": self.id})
-
-    @property
-    def consent_letters_url(self):
-        return reverse_lazy("project-consent-letters", kwargs={"pk": self.id})
+    def attributes_table(self):
+        values = []
+        keys = [attr.name for attr in self.current_case_attributes()]
+        for case_ in self.current_cases():
+            case_values = [case_.pseudonym]
+            if case_.attributes and isinstance(case_.attributes, dict):
+                for attr in keys:
+                    case_values.append(case_.attributes.get(attr))
+            else:
+                case_values += [None] * len(keys)
+            values.append(case_values)
+        return values
 
 
 MEMBER_ROLES = [("viewer", "Viewer"), ("editor", "Editor")]
@@ -214,7 +192,7 @@ class Question(models.Model):
         Project, on_delete=models.CASCADE, related_name="questions"
     )
     question = models.TextField("Question")
-    order = models.IntegerField("Order")
+    order = models.IntegerField("Order", default=100)
     is_enabled = models.BooleanField("Enabled", default=True, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     last_modified_at = models.DateTimeField(auto_now=True)
@@ -316,6 +294,9 @@ class Bot(models.Model):
     def actual_interviews(self):
         return self.interviews.filter(is_test=False, deleted_at=None)
 
+    def get_absolute_url(self):
+        return reverse_lazy("bot-public", kwargs={"pk": self.pk})
+
 
 INTERVIEW_STATUS = [
     ("invited", "Participant invited"),
@@ -357,7 +338,7 @@ class Interview(models.Model):
         max_length=10, choices=INTERVIEW_STATUS, blank=False, null=False
     )
     attributes = models.JSONField(
-        "Additional attributes", null=False, blank=False, default=dict
+        "Additional attributes", null=False, blank=True, default=dict
     )
     ip_address = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -430,6 +411,7 @@ class Interview(models.Model):
             }
             self.content.append(response_dict)
             import traceback
+
             traceback.print_exception(ex)
         await self.asave()
         return response_dict
@@ -646,28 +628,151 @@ class InvitationEmail(models.Model):
         return "f{self.email} at {self.sent_at} for {self.project.name}"
 
 
-class Transcript(models.Model):
-    project = models.ForeignKey(
-        Project, on_delete=models.CASCADE, related_name="transcripts"
+class Case(models.Model):
+    id = models.UUIDField(
+        "Identifier", primary_key=True, default=uuid.uuid4, editable=False, unique=True
     )
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="cases")
+    pseudonym = models.CharField(max_length=200, blank=None)
+    real_name = models.CharField(
+        "Real name", max_length=200, default=None, null=True, blank=True
+    )
+    description = models.TextField(default="", null=True, blank=True)
+    attributes = models.JSONField(blank=True, null=True, default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(default=None, null=True, blank=True)
+
+    def current_records(self) -> Iterable["Record"]:
+        return self.records.filter(deleted_at=None)
+
+    @classmethod
+    def from_chat(_class, interview: Interview, pseudonym: str = None) -> "Case":
+        if not interview.content:
+            raise Exception("Can't import empty interview")
+        start_at = parse_datetime(interview.content[0]["sent_at"])
+
+        def pseudonymize(txt):
+            if pseudonym and txt:
+                return txt.replace(interview.subject_name, pseudonym)
+            else:
+                return txt
+
+        content = [
+            {
+                "id": msg["uuid"] if "uuid" in msg else str(uuid.uuid4()),
+                "who": msg.get("sender"),
+                "text": pseudonymize(msg.get("message")),
+                "reference": format_timedelta(
+                    parse_datetime(msg.get("sent_at")) - start_at
+                ),
+            }
+            for msg in (interview.content or [])
+            if msg["sender"] in ["user", "model"]
+        ]
+        case = Case.objects.create(
+            project=interview.project,
+            pseudonym=pseudonym or interview.subject_name,
+            real_name=interview.subject_name,
+            attributes=interview.attributes,
+        )
+        Record.objects.create(
+            project=interview.project,
+            case=case,
+            interview=interview,
+            content=content,
+            record_type="ai_chat",
+        )
+        return case
+
+    def __str__(self):
+        return self.pseudonym
+
+    def get_markdown(self):
+        mds = [f"# Case: {self.pseudonym}"] + [
+            r.get_markdown() for r in self.current_records()
+        ]
+        return "\n\n".join(mds)
+
+
+CASE_ATTR_VALUE_TYPES = [
+    ("discrete", "Discrete-valued"),
+    ("continuous", "Continuous-valued"),
+]
+
+
+class CaseAttribute(models.Model):
+    """Attribute metadata on cases"""
+
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, unique=True
+    )
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="case_attributes"
+    )
+    name = models.CharField(max_length=100)
+    display_name = models.CharField(max_length=100)
+    value_type = models.CharField(max_length=10, choices=CASE_ATTR_VALUE_TYPES)
+    order = models.IntegerField()
+    display_in_table = models.BooleanField(default=True)
+    include_for_llm = models.BooleanField(default=True)
+    display_with_name = models.BooleanField(default=False)
+    display_properties = models.JSONField(blank=True, default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(default=None, null=True, blank=True)
+
+    class Meta:
+        ordering = ["order"]
+        unique_together = [("name", "project")]
+
+    def __str__(self):
+        return self.display_name
+
+
+RECORD_TYPES = [
+    ("ai_chat", "AI chat"),
+    ("manual_transcript", "Transcript"),
+    ("note", "Note"),
+]
+
+
+class Record(models.Model):
+    """Record attached to a case."""
+
+    id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False, unique=True
+    )
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="records"
+    )
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name="records")
     interview = models.ForeignKey(
         Interview, on_delete=models.SET_NULL, null=True, default=None
     )
-    subject_name = models.CharField(max_length=100, blank=None)
-    full_text = models.TextField()
-    description = models.TextField()
-    is_excluded = models.BooleanField(
-        "Exclude from analysis", default=False, null=False
-    )
+    record_type = models.CharField("Record type", choices=RECORD_TYPES, max_length=20)
+    description = models.CharField(max_length=100, null=True, blank=True, default=None)
+    content = models.JSONField(null=False, blank=True, default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
-    last_modified_at = models.DateTimeField(auto_now=True)
-
-    @property
-    def transcript_type(self):
-        return "Bot" if self.interview else "Manual"
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(default=None, null=True, blank=True)
 
     def __str__(self):
-        return self.description
+        return f"{self.case.pseudonym}: {self.record_type}"
+
+    def get_markdown(self):
+        if self.record_type == "ai_chat":
+            lines = [f"## Chatbot interview transcript: {self.case.pseudonym}", ""] + [
+                f"    {line['reference']} {line['who']}: {line['text'].strip()}"
+                for line in self.content
+            ]
+            md = "\n".join(lines)
+        else:
+            md = (
+                f"## {self.get_record_type_display()}: {self.case.pseudonym}\n\n"
+                + self.content["markdown"]
+            )
+        return md
 
 
 class MemberInvitation(models.Model):

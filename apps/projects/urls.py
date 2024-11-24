@@ -1,86 +1,112 @@
 from django.urls import path
 
-from apps.projects.views import interviews, analysis, projects, members, questions, bots, transcripts, letters
+from apps.projects.views import (
+    data,
+    interviews,
+    analysis,
+    projects,
+    questions,
+    bots,
+    settings,
+    cases,
+    api,
+)
 
 
 urlpatterns = [
     path("projects/<str:pk>/", projects.dashboard, name="project"),
-    path("projects/<str:pk>/settings", projects.settings, name="project-settings"),
     path("projects/new", projects.new, name="project-new"),
     path("projects/<str:pk>/delete", projects.delete, name="project-delete"),
     path("projects/<str:pk>/leave", projects.leave, name="project-leave"),
-
-    path("projects/<str:pk>/members", members.list, name="project-members"),
-    path("projects/<str:pk>/invite", members.invite, name="project-invite"),
+    path("projects/<str:pk>/settings", settings.index, name="project-settings"),
+    path(
+        "projects/<str:pk>/settings-tab",
+        settings.settings_tab,
+        name="project-settings-tab",
+    ),
+    # path("projects/<str:pk>/attributes", settings.attributes, name="attribute-list"),
+    path(
+        "projects/<str:pk>/attributes/new", settings.new_attribute, name="attribute-new"
+    ),
+    path(
+        "projects/<str:pk>/attributes/delete",
+        settings.delete_attribute,
+        name="attribute-delete",
+    ),
+    path("attribute/<str:pk>/edit", settings.edit_attribute, name="attribute-edit"),
+    path("projects/<str:pk>/invite", settings.invite, name="project-invite"),
+    path("projects/<str:pk>/members", settings.members, name="project-members"),
+    path(
+        "projects/<str:pk>/invitations",
+        settings.invitations,
+        name="project-invitations",
+    ),
     path(
         "invitations/<str:pk>/resend",
-        members.resend_invitation,
+        settings.resend_invitation,
         name="invitation-resend",
     ),
     path(
         "invitations/<str:pk>/cancel",
-        members.cancel_invitation,
+        settings.cancel_invitation,
         name="invitation-cancel",
     ),
     path(
-        "collaborate/landing/<str:code>", members.invitation_landing, name="invitation-landing"
+        "collaborate/landing/<str:code>",
+        settings.invitation_landing,
+        name="invitation-landing",
     ),
     path(
-        "collaborate/respond/<str:code>", members.invitation_respond, name="invitation-respond"
+        "collaborate/respond/<str:code>",
+        settings.invitation_respond,
+        name="invitation-respond",
     ),
-
     path("projects/<str:pk>/questions", questions.list, name="project-questions"),
     path(
-        "projects/<str:pk>/questions/new",
-        questions.new,
-        name="project-questions-new",
+        "projects/<str:pk>/questions/new", questions.new, name="project-questions-new"
     ),
     path("question/<str:pk>/edit", questions.edit, name="question-edit"),
     path("question/<str:pk>/delete", questions.delete, name="question-delete"),
-
-    path("projects/<str:pk>/simulate", bots.simulate, name="projects-simulate"),
-    path("projects/<str:pk>/bots", bots.list, name="project-bots"),
-    path("projects/<str:pk>/bots/new", bots.new, name="project-bots-new"),
-    path("bots/<str:pk>/edit", bots.edit, name="bot-edit"),
-    path("bots/<str:pk>/delete", bots.delete, name="bot-delete"),
-    path("bots/<str:pk>/duplicate", bots.duplicate, name="bot-duplicate"),
-    path("bots/<str:pk>/public", bots.landing_public, name="bot-public"),
-
-    path(
-        "projects/<str:pk>/consent-letters",
-        letters.list,
-        name="project-consent-letters",
-    ),
+    # path("projects/<str:pk>/simulate", bots.simulate, name="projects-simulate"),
+    path("projects/<str:pk>/bots", bots.index, name="project-bots"),
+    path("projects/<str:pk>/bots/new", bots.new_bot, name="project-bots-new"),
+    path("bots/<str:pk>/edit", bots.edit_bot, name="bot-edit"),
+    path("bots/<str:pk>/delete", bots.delete_bot, name="bot-delete"),
+    path("bots/<str:pk>/duplicate", bots.duplicate_bot, name="bot-duplicate"),
     path(
         "projects/<str:pk>/consent-letters/new",
-        letters.new,
+        bots.new_letter,
         name="project-consent-letters-new",
     ),
-    path(
-        "consent-letters/<str:pk>/edit", letters.edit, name="consent-letter-edit"
-    ),
-    path(
-        "consent-letter/<str:pk>", letters.public, name="consent-letter-public"
-    ),
+    path("consent-letters/<str:pk>/edit", bots.edit_letter, name="consent-letter-edit"),
+    path("consent-letter/<str:pk>", bots.view_letter, name="consent-letter-public"),
     path(
         "consent-letters/<str:pk>/delete",
-        letters.delete,
+        bots.delete_letter,
         name="consent-letter-delete",
     ),
-
-    path("interviews/<str:interview_code>", interviews.landing_invited, name="interview"),
+    path("bots/<str:pk>/public", interviews.landing_public, name="bot-public"),
+    path(
+        "interviews/<str:interview_code>", interviews.landing_invited, name="interview"
+    ),
     path("interviews/<str:pk>/delete", interviews.delete, name="interview-delete"),
-    path("interviews/<str:pk>/landing", interviews.uninvited_landing, name="interview-landing"),
+    path(
+        "interviews/<str:pk>/landing",
+        interviews.uninvited_landing,
+        name="interview-landing",
+    ),
     path("interviews/<str:pk>/lund", interviews.lund_questions, name="lund-questions"),
     path(
         "interviews/<str:pk>/conversation",
         interviews.conversation,
         name="interview-conversation",
     ),
-    path("interviews/<str:pk>/messages", interviews.messages_json, name="interview-messages"),
     path(
-        "projects/<str:pk>/export", interviews.export, name="export-interviews"
+        "interviews/<str:pk>/messages",
+        interviews.messages_json,
+        name="interview-messages",
     ),
+    path("projects/<str:pk>/export", interviews.export, name="export-interviews"),
     path(
         "projects/<str:pk>/invitations",
         interviews.list_invited,
@@ -92,24 +118,39 @@ urlpatterns = [
         name="project-interviews-invite",
     ),
     path(
-        "projects/<str:pk>/interviews",
-        interviews.list,
-        name="project-interviews-list",
+        "projects/<str:pk>/interviews", interviews.list, name="project-interviews-list"
     ),
     path(
         "projects/<str:pk>/test_interviews",
         interviews.list_json,
         name="project-interviews-test-json",
     ),
-
+    path("projects/<str:pk>/data", data.index, name="data"),
     path(
-        "projects/<str:pk>/transcripts", transcripts.list, name="project-responses"
+        "projects/<str:pk>/data/update-descriptions",
+        data.update_descriptions,
+        name="data-update-descriptions",
     ),
+    path("projects/<str:pk>/data/new", cases.new_case, name="case-new"),
+    path("projects/<str:pk>/data/cases", data.cases, name="cases"),
+    path("projects/<str:pk>/data/import", data.import_chats, name="import-chats"),
+    path("projects/<str:pk>/themes", analysis.themes, name="themes"),
     path(
-        "projects/<str:pk>/transcripts/upload",
-        transcripts.new,
-        name="project-transcripts-upload",
+        "projects/<str:pk>/themes/regenerate",
+        analysis.regenerate_themes,
+        name="regenerate-themes",
     ),
-
-    path("projects/<str:pk>/analysis", analysis.project_analysis, name="project-analysis"),
+    path("projects/<str:pk>/query", analysis.query, name="query"),
+    path("projects/<str:pk>/harmonized", analysis.harmonized, name="harmonized"),
+    path("case/<str:pk>/delete", data.delete_case, name="case-delete"),
+    path("case/<str:pk>", cases.index, name="case"),
+    path("case/<str:pk>/new-note", cases.new_note, name="note-new"),
+    path("record/<str:pk>/delete", cases.delete_record, name="record-delete"),
+    path("record/<str:pk>/<str:line>/edit", cases.edit_line, name="record-edit-line"),
+    path("record/<str:pk>/<str:line>", cases.show_line, name="record-line"),
+    path("note/<str:pk>/edit", cases.edit_note, name="note-edit"),
+    path("api/p/<str:pk>/cases", api.all_cases, name="api-all-cases"),
+    path(
+        "projects/<str:pk>/api/example", api.api_access_example, name="api-example-py"
+    ),
 ]

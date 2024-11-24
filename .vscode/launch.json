@@ -34,6 +34,18 @@
         "apps"
       ],
       "django": false
+    },
+    {
+      "name": "Current test",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "console": "integratedTerminal",
+      "args": [
+        "test",
+        "apps.projects.tests.test_data.TestMarkdown"
+      ],
+      "django": false
     }
   ]
 }

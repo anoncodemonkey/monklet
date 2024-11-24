@@ -1,0 +1,43 @@
+{% extends 'layout/layout_vertical.html' %}
+
+{% load static markdown_filters %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/project.css' %}" />
+{% endblock page_css %}
+
+{% block vendor_js %}
+<script src="{% static 'vendor/libs/jquery/jquery.js' %}"></script>
+{% endblock vendor_js %}
+
+{% block content %}
+
+<h4>Themes</h4>
+
+<div id="theme_list">
+{% if project.themes %}
+{% include 'analysis/_themes.html' %}
+{% else %}
+{% endif %}
+<div>
+  <a
+    class="btn btn-secondary"
+    href="#"
+    hx-get="{% url 'regenerate-themes' pk=project.pk %}"
+    hx-target="#theme_list"
+    hx-swap="innerHTML"
+    hx-confirm="Regenerate and replace themes?"
+    >
+    Regenerate themes
+  </a>
+  <p>
+    Note: due to the stochastic nature of the language model,
+    themes and quotes will be different each time they are regenerated.
+  </p>
+</div>
+</div>
+
+{% endblock content %}

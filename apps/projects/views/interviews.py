@@ -4,9 +4,14 @@ import zipfile
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.timezone import now
-from apps.context_helpers import backend_context, blank_context
-from apps.projects.forms import ExportInterviewsForm, InterviewConsentForm, InterviewForm, LundSurveyForm
-from apps.projects.models import Interview, Project
+from apps.projects.forms import (
+    ExportInterviewsForm,
+    InterviewConsentForm,
+    InterviewForm,
+    LundSurveyForm,
+    PublicConsentForm,
+)
+from apps.projects.models import Bot, Interview, Project
 
 
 from django.contrib.auth.decorators import login_required
@@ -21,11 +26,10 @@ from apps.projects.util import datetime_str
 # note: unauthenticated view - interview_code provides security
 def landing_invited(request, interview_code):
     iv = get_object_or_404(Interview, pk=interview_code)
-    ctx = blank_context({"project": iv.project, "interview": iv})
     return render(
         request,
         "interviews/interview.html",
-        ctx,
+        {"project": iv.project, "interview": iv},
     )
 
 
@@ -46,15 +50,13 @@ def uninvited_landing(request, pk):
                 return redirect(interview_url)
     else:
         form = InterviewConsentForm(instance=iv)
-    ctx = blank_context(
-        {
-            "form": form,
-            "project": project,
-            "bot": iv.bot,
-            "interview": iv,
-            "is_collaborator": project.can_view(request.user),
-        }
-    )
+    ctx = {
+        "form": form,
+        "project": project,
+        "bot": iv.bot,
+        "interview": iv,
+        "is_collaborator": project.can_view(request.user),
+    }
     return render(request, "interviews/landing.html", ctx)
 
 
@@ -97,16 +99,14 @@ def conversation(request, pk):
     iv = get_object_or_404(Interview, pk=pk)
     msg_list = iv.messages_list()
     prompt_tokens, gen_tokens, total_tokens = iv.total_token_usage()
-    ctx = backend_context(
-        {
-            "interview": iv,
-            "project": iv.project,
-            "msg_list": msg_list,
-            "prompt_tokens": prompt_tokens,
-            "gen_tokens": gen_tokens,
-            "total_tokens": total_tokens,
-        }
-    )
+    ctx = {
+        "interview": iv,
+        "project": iv.project,
+        "msg_list": msg_list,
+        "prompt_tokens": prompt_tokens,
+        "gen_tokens": gen_tokens,
+        "total_tokens": total_tokens,
+    }
     return render(request, "interviews/conversation.html", ctx)
 
 
@@ -116,9 +116,7 @@ def list_invited(request: HttpRequest, pk: str) -> HttpResponse:
     if not project.can_view(request.user):
         raise PermissionDenied("User action not permitted.")
     interviews = project.interviews.filter(deleted_at=None, status="invited")
-    ctx = backend_context(
-        {"project": project, "interviews": interviews}
-    )
+    ctx = {"project": project, "interviews": interviews}
     return render(request, "interviews/invited.html", ctx)
 
 
@@ -129,27 +127,25 @@ def list(request: HttpRequest, pk: str) -> HttpResponse:
         raise PermissionDenied("User action not permitted.")
     interviews = project.started_completed_interviews()
     template = "interviews/list.html"
-    if request.method == 'POST':
+    if request.method == "POST":
         # nb default status is started/completed
-        if request.POST.get('status') == 'invited':
+        if request.POST.get("status") == "invited":
             interviews = project.invited_interviews()
-        elif request.POST.get('status') == 'test':
+        elif request.POST.get("status") == "test":
             interviews = project.test_interviews()
-        if request.POST.get('followup') == 'ok_only':
+        if request.POST.get("followup") == "ok_only":
             interviews = interviews.filter(followup_consented=True)
-        elif request.POST.get('followup') == 'no_only':
+        elif request.POST.get("followup") == "no_only":
             interviews = interviews.filter(followup_consented=False)
-        if request.POST.get('bot', 'all') != 'all':
-            interviews = interviews.filter(bot_id=request.POST.get('bot'))
+        if request.POST.get("bot", "all") != "all":
+            interviews = interviews.filter(bot_id=request.POST.get("bot"))
         if request.headers.get("HX-Request") == "true":
-            template = 'interviews/_interview_table.html'
-    ctx = backend_context(
-        {
-            "project": project,
-            "interviews": interviews,
-            "is_editor": project.can_edit(request.user),
-        }
-    )
+            template = "interviews/_interview_table.html"
+    ctx = {
+        "project": project,
+        "interviews": interviews,
+        "is_editor": project.can_edit(request.user),
+    }
     return render(request, template, ctx)
 
 
@@ -184,7 +180,7 @@ def export(request: HttpRequest, pk: str) -> HttpResponse:
             return response
     else:
         form = ExportInterviewsForm()
-    ctx = backend_context({"form": form, "project": proj})
+    ctx = {"form": form, "project": proj}
     return render(request, "interviews/export.html", ctx)
 
 
@@ -195,7 +191,7 @@ def invite(request: HttpRequest, pk: str) -> HttpResponse:
         raise PermissionDenied("User action not permitted.")
     if request.method == "POST":
         form = InterviewForm(request.POST)
-        if form.is_valid:
+        if form.is_valid():
             inv = form.save(commit=False)
             inv.project = project
             inv.status = "invited"
@@ -207,9 +203,7 @@ def invite(request: HttpRequest, pk: str) -> HttpResponse:
         form = InterviewForm()
         if "bot" in request.GET:
             form.initial["bot"] = request.GET["bot"]
-    ctx = backend_context(
-        {"form": form, "project": project}
-    )
+    ctx = {"form": form, "project": project}
     return render(request, "interviews/new.html", ctx)
 
 
@@ -239,7 +233,7 @@ def lund_questions(request: HttpRequest, pk: str) -> HttpResponse:
             return redirect("interview", interview_code=interview.pk)
     else:
         form = LundSurveyForm()
-    ctx = blank_context({"interview": interview, "form": form})
+    ctx = {"interview": interview, "form": form}
     return render(request, "interviews/lund_questions.html", ctx)
 
 
@@ -260,3 +254,48 @@ def messages_json(request: HttpRequest, pk: str) -> JsonResponse:
 
     data = [format(msg) for msg in interview.content]
     return JsonResponse(data, safe=False)  # safe=False serializes uuid and date
+
+
+def landing_public(request: HttpRequest, pk: str) -> HttpResponse:
+    bot = get_object_or_404(Bot, pk=pk)
+    if not bot.allow_public:
+        raise PermissionDenied("Use of this bot is by invitation only.")
+    project = bot.project
+    is_collaborator = project.can_view(request.user)
+    if request.method == "POST":
+        form = PublicConsentForm(request.POST)
+        form.is_valid()
+        if (
+            not form.cleaned_data["subject_email"]
+            and form.cleaned_data["followup_consented"]
+        ):
+            form.add_error(
+                "subject_email", "Please provide your email address for follow-up."
+            )
+        if form.is_valid():
+            interview = form.save(commit=False)
+            interview.project = project
+            interview.bot = bot
+            interview.ip_address = request.headers.get("X-Real-IP")
+            interview.status = "invited"
+            interview.is_test = is_collaborator  # user is logged in as a collaborator
+            interview.save()
+            # hack hack hack
+            if bot.config.get("show_lund_questions"):
+                return redirect(
+                    reverse_lazy("lund-questions", kwargs=dict(pk=interview.pk))
+                )
+            interview_url = reverse_lazy(
+                "interview", kwargs={"interview_code": interview.pk}
+            )
+            return redirect(interview_url)
+    else:
+        form = PublicConsentForm()
+    ctx = {
+        "bot": bot,
+        "project": project,
+        "form": form,
+        "ip_address": request.headers.get("X-Real-IP"),
+        "is_collaborator": is_collaborator,
+    }
+    return render(request, "interviews/public.html", ctx)

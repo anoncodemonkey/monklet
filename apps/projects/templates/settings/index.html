@@ -1,0 +1,17 @@
+{% extends 'layout/layout_vertical.html' %}
+
+{% load static i18n crispy_forms_tags %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/project.css' %}" />
+{% endblock page_css %}
+
+{% block content %}
+<div id='settings-card' class="card">
+  {% include 'settings/_settings_card.html' %}
+</div>
+
+{% endblock content %}

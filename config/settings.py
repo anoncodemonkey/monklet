@@ -42,6 +42,7 @@ DEBUG = os.environ.get("DEBUG", "True").lower() in ["true", "yes", "1"]
 if DEBUG:
     ALLOWED_HOSTS = [
         "localhost",
+        "monklet.local",
         "0.0.0.0",
         "127.0.0.1",
         "192.168.168.110",
@@ -74,9 +75,15 @@ INSTALLED_APPS = [
     "apps.users",
     "crispy_forms",
     "crispy_bootstrap5",
-    "django_recaptcha",
+    # "django_celery_results",
+    "django_celery_beat",
     "channels",
 ]
+
+if not (DEBUG or TESTING):
+    INSTALLED_APPS += [
+        "django_recaptcha",
+    ]
 
 if DEBUG:
     INSTALLED_APPS += [
@@ -133,14 +140,20 @@ CRISPY_FAIL_SILENTLY = not DEBUG
 RECAPTCHA_PUBLIC_KEY = os.environ.get("RECAPTCHA_PUBLIC_KEY")
 RECAPTCHA_PRIVATE_KEY = os.environ.get("RECAPTCHA_PRIVATE_KEY")
 
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_TIMEZONE = "UTC"
+CELERY_ENABLE_UTC = True
+
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-if DEBUG:
+if DEBUG or TESTING:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
+            "TEST": {"NAME": ":memory:"},
         }
     }
 else:

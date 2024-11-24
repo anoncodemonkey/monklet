@@ -2,9 +2,13 @@
 test:
 	./manage.py test apps
 
+.PHONY: pw
+pw:
+	./manage.py test apps.projects.tests.test_projects
+
 .PHONY: dev
 dev:
-	.venv/bin/uvicorn --reload config.asgi:application --host 0.0.0.0 --port 8765
+	DEBUG=True .venv/bin/uvicorn --reload config.asgi:application --host 0.0.0.0 --port 8765
 
 .PHONY: gunicorn
 gunicorn:
@@ -19,3 +23,24 @@ build:
 	rm -rf staticfiles
 	npm --prefix src run build:prod
 	.venv/bin/python3 manage.py collectstatic
+
+.PHONY: .venv
+.venv: requirements.txt
+	python3 -m venv .venv
+	.venv/bin/python -m pip install -r requirements.txt
+	sudo apt install libatk-bridge2.0-0 libxkbcommon0 libgbm1 libatspi2.0-0
+	python -m playwright install
+
+.PHONY: dump
+dump:
+	pg_dump -d monklet -F c -f snapshot.dump
+
+.PHONY: worker
+worker:
+	celery -A config.celery worker --loglevel=debug --concurrency=2
+	#--detach
+
+.PHONY: beat
+beat:
+	celery -A config.celery beat --loglevel=debug
+	#--detach

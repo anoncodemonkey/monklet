@@ -1,7 +1,5 @@
 from django.contrib import messages
-from django.urls import reverse_lazy
 from django.utils.timezone import now
-from apps.context_helpers import backend_context
 from apps.projects.forms import ProjectForm
 from apps.projects.models import Project
 
@@ -31,36 +29,15 @@ def dashboard(request: HttpRequest, pk: str) -> HttpResponse:
         .count()
     )
     test = proj.interviews.filter(is_test=True).count()
-    ctx = backend_context(
-        {
-            "project": proj,
-            "inv_only": inv_only,
-            "started": started,
-            "complete": complete,
-            "followup_ok": followup_ok,
-            "test": test,
-        }
-    )
+    ctx = {
+        "project": proj,
+        "inv_only": inv_only,
+        "started": started,
+        "complete": complete,
+        "followup_ok": followup_ok,
+        "test": test,
+    }
     return render(request, "projects/project.html", ctx)
-
-
-@login_required
-def settings(request: HttpRequest, pk: str) -> HttpResponse:
-    project = get_object_or_404(Project, pk=pk)
-    if not project.owner == request.user:
-        raise PermissionDenied("User action not permitted.")
-    if request.method == "POST":
-        form = ProjectForm(request.POST, instance=project)
-        if form.is_valid():
-            project = form.save()
-            messages.success(request, "Project updated successfully")
-            return redirect(project.url)
-    else:
-        form = ProjectForm(instance=project)
-    ctx = backend_context(
-        {"form": form, "project": project}
-    )
-    return render(request, "projects/detail.html", ctx)
 
 
 @login_required
@@ -70,12 +47,10 @@ def new(request: HttpRequest) -> HttpResponse:
         if form.is_valid():
             form.instance.owner = request.user
             proj = form.save()
-            return redirect(reverse_lazy("project-members", kwargs={"pk": proj.id}))
+            return redirect(proj)
     else:
         form = ProjectForm()
-        form.helper.form_acount = reverse_lazy("project-new")
-    ctx = backend_context({"form": form, "project": dashboard})
-    return render(request, "projects/detail.html", ctx)
+    return render(request, "projects/new.html", {"form": form})
 
 
 @login_required
@@ -86,10 +61,9 @@ def delete(request: HttpRequest, pk: str) -> HttpResponse:
     if request.method == "POST":
         project.deleted_at = now()
         project.save()
-        messages.success(request, "Project {project.name} deleted.")
-        return redirect("profile")
-    ctx = backend_context({"project": project})
-    return render(request, "projects/delete.html", ctx)
+        messages.success(request, f"Project {project.name} deleted.")
+        return redirect("users:profile")
+    return render(request, "projects/delete.html", {"project": project})
 
 
 @login_required
@@ -100,7 +74,6 @@ def leave(request: HttpRequest, pk: str) -> HttpResponse:
     if request.method == "POST":
         project.members.remove(request.user)
         project.save()
-        messages.success(request, f"You have been removed from {project.name}.")
-        return redirect("profile")
-    ctx = backend_context({"project": project})
-    return render(request, "projects/leave.html", ctx)
+        messages.success(request, f"You have left {project.name}.")
+        return redirect("users:profile")
+    return render(request, "projects/leave.html", {"project": project})

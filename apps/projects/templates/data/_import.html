@@ -1,0 +1,37 @@
+{% load static i18n crispy_forms_tags %}
+
+<form>
+  {% if available %}
+  {% crispy formset formsethelper %}
+  {% if formset.non_form_errors %}
+    <div class="error">
+        {{ formset.non_form_errors }}
+    </div>
+  {% endif %}
+  {% csrf_token %}
+  {% else %}
+  <div class="alert alert-warning pl-3" role="alert">
+    There are no unimported AI chats.
+  </div>
+  {% endif %}
+  <div class="my-5">
+  {% if available %}
+    <input
+      type="submit"
+      name="Save"
+      value="save"
+      class="btn btn-primary"
+      id="submit-id-save"
+      hx-post="{% url "import-chats" pk=project.pk %}"
+      hx-swap="innerHTML"
+      hx-target="#cases-tab">
+    {% endif %}
+    <a
+      class="btn"
+      hx-get="{% url "cases" pk=project.pk %}"
+      hx-swap="innerHTML"
+      hx-target="#cases-tab">
+      Cancel
+    </a>
+  </div>
+</form>

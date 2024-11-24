@@ -1,0 +1,89 @@
+{% load menu_tags %}
+
+<li class="menu-header mt-7">
+  <span class="menu-header-text">Current project</span>
+</li>
+
+<li class="menu-item {% project_active 'project' project.pk %}">
+  <a href="{% url 'project' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-dashboard-line"></i>
+    <div>Dashboard</div>
+  </a>
+</li>
+
+<li class="menu-item {% project_active "project-settings" project.pk %}">
+  <a href="{% url 'project-settings' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-settings-2-line"></i>
+    <div>Settings</div>
+  </a>
+</li>
+
+<li class="menu-header mt-7">
+    <span class="menu-header-text">AI Chatbots</span>
+</li>
+
+<li class="menu-item {% project_active "project-questions" project.pk %}">
+  <a href="{% url 'project-questions' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-question-line"></i>
+    <div>Questions</div>
+  </a>
+</li>
+
+<li class="menu-item {% project_active "project-bots" project.pk "active" %}">
+  <a href="{% url 'project-bots' pk=project.pk %}" class="menu-link {# menu-toggle #}">
+    <i class="menu-icon tf-icons ri-robot-2-line"></i>
+    <div>Bots</div>
+  </a>
+  {% comment %}
+  <ul class="menu-sub">
+    {% for bot in project.get_active_bots %}
+    <li class="menu-item {% active bot.get_absolute_url %}">
+      <a href="{{ bot.get_absolute_url }}" class="menu-link" target="_blank">
+        <div>{{ bot.name }}</div>&nbsp;<i class="ri-external-link-line"></i>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endcomment %}
+</li>
+
+
+<li class="menu-item {% project_active "project-interviews-list" project.pk %}">
+  <a href="{% url 'project-interviews-list' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-chat-2-line"></i>
+    <div>AI chats</div>
+  </a>
+</li>
+
+
+<li class="menu-header mt-7">
+    <span class="menu-header-text">Analysis</span>
+</li>
+
+<li class="menu-item {% project_active "data" project.pk %}">
+  <a href="{% url 'data' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-database-line"></i>
+    <div>Data</div>
+  </a>
+</li>
+
+<li class="menu-item {% project_active "themes" project.pk %}">
+  <a href="{% url 'themes' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-list-unordered"></i>
+    <div>Themes</div>
+  </a>
+</li>
+
+<li class="menu-item {% project_active "query" project.pk %}">
+  <a href="{% url 'query' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-search-line"></i>
+    <div>Query</div>
+  </a>
+</li>
+
+<li class="menu-item {% project_active "harmonized" project.pk %}">
+  <a href="{% url 'harmonized' pk=project.pk %}" class="menu-link">
+    <i class="menu-icon tf-icons ri-bar-chart-box-line"></i>
+    <div>Harmonized analysis</div>
+  </a>
+</li>

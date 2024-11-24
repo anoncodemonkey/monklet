@@ -1,21 +1,18 @@
 from django import forms
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit, Button
-from django_recaptcha.fields import ReCaptchaField
-from django_recaptcha.widgets import ReCaptchaV3
 from django.conf import settings
 
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Submit, Button
+
 from .models import (
+    CaseAttribute,
     Project,
     Question,
     Bot,
     ConsentLetter,
     Interview,
-    Transcript,
     MemberInvitation,
 )
-
-# another possibility: https://stackoverflow.com/a/56719980
 
 
 def cancel():
@@ -38,21 +35,12 @@ class ProjectForm(forms.ModelForm):
         self.fields["description"].widget.attrs["rows"] = 3
         self.fields["research_aims"].widget.attrs["rows"] = 3
         self.fields["funding"].widget.attrs["rows"] = 2
-        self.helper = FormHelper()
-        self.helper.add_input(save())
-        self.helper.add_input(cancel())
 
 
 class MemberInvitationForm(forms.ModelForm):
     class Meta:
         model = MemberInvitation
         fields = ["name", "email", "role"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.helper = FormHelper()
-        self.helper.add_input(save())
-        self.helper.add_input(cancel())
 
 
 class QuestionForm(forms.ModelForm):
@@ -90,9 +78,6 @@ class BotForm(forms.ModelForm):
         self.fields["description"].widget.attrs["rows"] = 3
         self.fields["prompt"].widget.attrs["rows"] = 20
         self.fields["config"].widget.attrs["rows"] = 2
-        self.helper = FormHelper()
-        self.helper.add_input(save())
-        self.helper.add_input(cancel())
 
 
 class ConsentLetterForm(forms.ModelForm):
@@ -104,8 +89,6 @@ class ConsentLetterForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["short_md"].widget.attrs["rows"] = 4
         self.helper = FormHelper()
-        self.helper.add_input(save())
-        self.helper.add_input(cancel())
 
 
 class InterviewForm(forms.ModelForm):
@@ -122,17 +105,14 @@ class InterviewForm(forms.ModelForm):
         self.helper.add_input(cancel())
 
 
-class ManualTranscriptForm(forms.ModelForm):
-    class Meta:
-        model = Transcript
-        fields = ["subject_name", "description", "full_text"]
+class ManualCaseForm(forms.Form):
+    pseudonym = forms.CharField(label="Pseudonym", required=True)
+    real_name = forms.CharField(label="Real name", required=False)
+    description = forms.CharField(widget=forms.Textarea, required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["description"].widget.attrs["rows"] = 3
-        self.helper = FormHelper()
-        self.helper.add_input(save())
-        self.helper.add_input(cancel())
 
 
 class InvitationResponseForm(forms.Form):
@@ -162,6 +142,9 @@ class PublicConsentForm(forms.ModelForm):
         label="The investigators may contact me for follow-up", required=False
     )
     if not (settings.DEBUG or settings.TESTING):
+        from django_recaptcha.fields import ReCaptchaField
+        from django_recaptcha.widgets import ReCaptchaV3
+
         # https://pypi.org/project/django-recaptcha/
         captcha = ReCaptchaField(widget=ReCaptchaV3)
 
@@ -257,3 +240,50 @@ class LundSurveyForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.add_input(Submit("Continue", "continue"))
+
+
+class ImportChatForm(forms.Form):
+    """Row of the import chat screen"""
+
+    id = forms.CharField(widget=forms.HiddenInput(), required=False)
+    selected = forms.BooleanField(required=False)
+    pseudonym = forms.CharField(min_length=1)
+
+
+class ImportChatFormSetHelper(FormHelper):
+    def __init__(self, *args, **kwargs):
+        super(ImportChatFormSetHelper, self).__init__(*args, **kwargs)
+        self.template = "data/_table_inline_formset.html"
+        self.form_tag = False
+
+
+ImportChatFormSet = forms.formset_factory(ImportChatForm, extra=0)
+
+
+class CaseFollowupRecordForm(forms.Form):
+    """Manually enter followup records"""
+
+    markdown = forms.CharField(label="Notes", widget=forms.Textarea(attrs={"rows": 8}))
+
+
+class CaseAttributeForm(forms.ModelForm):
+
+    class Meta:
+        model = CaseAttribute
+        fields = [
+            "name",
+            "display_name",
+            "value_type",
+            "order",
+            "display_in_table",
+            "include_for_llm",
+            "display_with_name",
+            "display_properties",
+        ]
+
+
+class ChatLineForm(forms.Form):
+
+    text = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 5, "class": "chat-row-edit"})
+    )

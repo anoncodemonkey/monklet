@@ -1,0 +1,23 @@
+{% extends 'layout/layout_vertical.html' %}
+
+{% load static i18n humanize crispy_forms_tags %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block page_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'vendor/css/project.css' %}" />
+{% endblock page_css %}
+
+{% block content %}
+<h4>{{case.pseudonym}}</h4>
+<p>
+  <a href="{% url 'data' pk=project.pk %}">
+    <i class="ri-arrow-left-line"></i> Back to data
+  </a>
+</p>
+
+<div class="card" id="case-card">
+  {% include 'case/_case_card.html' %}
+</div>
+{% endblock content %}
