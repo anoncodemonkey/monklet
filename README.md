@@ -1,8 +1,5 @@
-monklet.com: Qualitative Analysis platform
-==========================================
-
-
-
+Qualitative analysis chat tool
+==============================
 
 Getting started
 ---------------
